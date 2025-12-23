@@ -1,70 +1,286 @@
-# Getting Started with Create React App
+# TaskWarrior UI
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+A modern, responsive web-based user interface for TaskWarrior with a REST API backend. Manage your tasks efficiently through a clean, intuitive web interface while leveraging the power of TaskWarrior's command-line functionality.
 
-## Available Scripts
+![TaskWarrior UI Screenshot](https://via.placeholder.com/800x400/2c3e50/ffffff?text=TaskWarrior+UI+Screenshot)
 
-In the project directory, you can run:
+## ✨ Features
 
-### `npm start`
+- **Modern React Interface** - Clean, responsive design with real-time updates
+- **Full Task Management** - Create, edit, complete, and reopen tasks
+- **Project & Priority Support** - Organize tasks with projects and priorities
+- **Tag Management** - Add and manage multiple tags per task
+- **Task Annotations** - Add notes and comments to tasks
+- **Search & Filter** - Find tasks quickly with built-in search
+- **REST API** - Complete API for integration with other tools
+- **Real-time Sync** - Changes reflect immediately in the UI
+- **Mobile Responsive** - Works seamlessly on desktop and mobile devices
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## 🚀 Quick Start
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Prerequisites
 
-### `npm test`
+- **Node.js** (v16.0.0 or higher)
+- **npm** (v8.0.0 or higher)
+- **TaskWarrior** installed and configured
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Installation
 
-### `npm run build`
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/HusnainTaseer/taskwarrior-ui.git
+   cd taskwarrior-ui
+   ```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+3. **Start the application**
+   ```bash
+   # Start both API server and React app
+   npm run dev
+   
+   # Or start them separately:
+   # Terminal 1: Start API server
+   npm run server
+   
+   # Terminal 2: Start React app
+   npm start
+   ```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+4. **Open your browser**
+   - Web UI: http://localhost:3000
+   - API Server: http://localhost:3001
 
-### `npm run eject`
+## 📋 TaskWarrior Installation & Setup
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+### macOS Installation
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```bash
+# Using Homebrew
+brew install task
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+# Using MacPorts
+sudo port install taskwarrior
+```
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### Linux Installation
 
-## Learn More
+**Ubuntu/Debian:**
+```bash
+sudo apt-get update
+sudo apt-get install taskwarrior
+```
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+**CentOS/RHEL/Fedora:**
+```bash
+# CentOS/RHEL
+sudo yum install task
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+# Fedora
+sudo dnf install task
+```
 
-### Code Splitting
+**Arch Linux:**
+```bash
+sudo pacman -S task
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Initial TaskWarrior Configuration
 
-### Analyzing the Bundle Size
+1. **Initialize TaskWarrior**
+   ```bash
+   task
+   ```
+   This creates the initial configuration and data directory.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+2. **Basic Configuration (Optional)**
+   ```bash
+   # Set your preferred date format
+   task config dateformat Y-M-D
+   
+   # Set default priority
+   task config default.priority M
+   
+   # Enable color output
+   task config color on
+   ```
 
-### Making a Progressive Web App
+3. **Verify Installation**
+   ```bash
+   task version
+   task add "Test task"
+   task list
+   ```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## 🔧 Configuration
 
-### Advanced Configuration
+### Environment Variables
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+Create a `.env` file in the root directory (optional):
 
-### Deployment
+```env
+# API Server Port (default: 3001)
+PORT=3001
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+# TaskWarrior data directory (optional)
+TASKDATA=/path/to/your/taskwarrior/data
+```
 
-### `npm run build` fails to minify
+### TaskWarrior Configuration
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The application uses your default TaskWarrior configuration. You can customize:
+
+```bash
+# View current configuration
+task show
+
+# Set custom data location
+task config data.location /path/to/taskdata
+
+# Configure urgency coefficients
+task config urgency.priority.coefficient 6.0
+task config urgency.project.coefficient 1.0
+```
+
+## 🛠️ Development
+
+### Project Structure
+
+```
+taskwarrior-ui/
+├── public/                 # Static files
+├── src/                   # React source code
+│   ├── components/        # React components
+│   ├── hooks/            # Custom React hooks
+│   └── utils/            # Utility functions
+├── server.js             # Express API server
+├── package.json          # Dependencies and scripts
+└── README.md            # This file
+```
+
+### Available Scripts
+
+- `npm start` - Start React development server (port 3000)
+- `npm run server` - Start API server only (port 3001)
+- `npm run dev` - Start both servers concurrently
+- `npm run build` - Build production React app
+- `npm test` - Run tests
+- `npm run eject` - Eject from Create React App
+
+### API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/tasks` | Get all tasks |
+| POST | `/api/tasks` | Create new task |
+| PUT | `/api/tasks/:id` | Update task |
+| POST | `/api/tasks/:id/complete` | Mark task as complete |
+| POST | `/api/tasks/:id/reopen` | Reopen completed task |
+| POST | `/api/tasks/:id/annotate` | Add annotation to task |
+
+### Example API Usage
+
+```javascript
+// Create a new task
+fetch('http://localhost:3001/api/tasks', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    description: 'Complete project documentation',
+    project: 'work',
+    priority: 'H',
+    tags: ['documentation', 'urgent']
+  })
+});
+
+// Get all tasks
+fetch('http://localhost:3001/api/tasks')
+  .then(response => response.json())
+  .then(tasks => console.log(tasks));
+```
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**TaskWarrior not found:**
+```bash
+# Check if TaskWarrior is installed
+which task
+
+# Check TaskWarrior version
+task version
+```
+
+**Permission errors:**
+```bash
+# Check TaskWarrior data directory permissions
+ls -la ~/.task/
+
+# Fix permissions if needed
+chmod 755 ~/.task/
+```
+
+**API server won't start:**
+```bash
+# Check if port 3001 is available
+lsof -i :3001
+
+# Kill process using the port
+kill -9 $(lsof -t -i:3001)
+```
+
+**Tasks not showing:**
+```bash
+# Verify TaskWarrior has tasks
+task list
+
+# Check TaskWarrior export format
+task export
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### Development Guidelines
+
+- Follow existing code style and conventions
+- Add tests for new features
+- Update documentation as needed
+- Ensure all tests pass before submitting PR
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 👨‍💻 Author
+
+**Husnain Taseer**
+- GitHub: [@HusnainTaseer](https://github.com/HusnainTaseer)
+- Email: husnain.taseer@example.com
+
+## 🙏 Acknowledgments
+
+- [TaskWarrior](https://taskwarrior.org/) - The powerful command-line task management tool
+- [React](https://reactjs.org/) - The web framework used
+- [Express.js](https://expressjs.com/) - The API server framework
+- [Lucide React](https://lucide.dev/) - Beautiful icons
+
+## 📊 Project Stats
+
+![GitHub stars](https://img.shields.io/github/stars/HusnainTaseer/taskwarrior-ui?style=social)
+![GitHub forks](https://img.shields.io/github/forks/HusnainTaseer/taskwarrior-ui?style=social)
+![GitHub issues](https://img.shields.io/github/issues/HusnainTaseer/taskwarrior-ui)
+![GitHub license](https://img.shields.io/github/license/HusnainTaseer/taskwarrior-ui)
+
+---
+
+⭐ **Star this repository if you find it helpful!**
