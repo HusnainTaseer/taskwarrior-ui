@@ -511,7 +511,10 @@ function App() {
   return (
     <div className="app">
       <div className="header">
-        <h1>TaskWarrior UI</h1>
+        <div className="header-title">
+          <img src="/taskwarrior-ui/images/logo.png" alt="TaskWarrior UI" className="app-logo" />
+          <h1>TaskWarrior UI</h1>
+        </div>
         <div className="header-controls">
           <div className="view-toggle">
             <button 

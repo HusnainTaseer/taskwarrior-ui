@@ -1022,3 +1022,13 @@ body {
 .hidden-tag-chip button, .hidden-project-chip button {
   color: #c53030;
 }
+.header-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app-logo {
+  height: 80px;
+  width: auto;
+}
