@@ -2,7 +2,7 @@
 
 A modern, responsive web-based user interface for TaskWarrior with a REST API backend. Manage your tasks efficiently through a clean, intuitive web interface while leveraging the power of TaskWarrior's command-line functionality.
 
-![TaskWarrior UI Screenshot](https://via.placeholder.com/800x400/2c3e50/ffffff?text=TaskWarrior+UI+Screenshot)
+![TaskWarrior UI Screenshot](https://github.com/user-attachments/assets/86f97bd9-a3c7-4943-9afa-45628d749882)
 
 ## ✨ Features
 
