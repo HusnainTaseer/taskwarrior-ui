@@ -218,6 +218,7 @@ body {
   border: 2px solid #e9ecef;
   border-radius: 10px;
   font-size: 14px;
+  height: 48px;
   outline: none;
   transition: border-color 0.3s ease;
   background: white;
@@ -815,4 +816,209 @@ body {
     transform: rotate(720deg);
     opacity: 0;
   }
+}
+.delete-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.delete-btn:hover {
+  background: #c82333;
+}
+
+.delete-modal {
+  max-width: 500px;
+}
+
+.warning-text {
+  color: #dc3545;
+  font-weight: bold;
+  margin: 16px 0;
+}
+
+.delete-confirm-input {
+  width: 100%;
+  padding: 12px;
+  border: 2px solid #ddd;
+  border-radius: 6px;
+  font-size: 16px;
+  margin-top: 8px;
+}
+
+.delete-confirm-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.delete-confirm-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.delete-confirm-btn:hover:not(:disabled) {
+  background: #c82333;
+}
+.archived-list {
+  display: flex;
+  flex-direction: column;
+  background: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  overflow: hidden;
+  width: 100%;
+  min-height: 400px;
+}
+
+.archived-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.1s ease;
+  min-height: 60px;
+}
+
+.archived-item:hover {
+  background: #f8fafc;
+}
+
+.archived-item:last-child {
+  border-bottom: none;
+}
+
+.archived-content {
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  flex: 1;
+  font-size: 14px;
+  overflow: hidden;
+}
+
+.archived-description {
+  font-weight: 500;
+  color: #374151;
+  flex: 3;
+  min-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.archived-project {
+  background: #e5e7eb;
+  color: #6b7280;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  flex: 0 0 auto;
+  min-width: 100px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.archived-completed {
+  color: #6b7280;
+  font-size: 13px;
+  flex: 0 0 auto;
+  min-width: 150px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.archived-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: 20px;
+}
+
+.archive-btn, .unarchive-btn {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background-color 0.1s ease;
+  color: #374151;
+  white-space: nowrap;
+}
+
+.archive-btn:hover, .unarchive-btn:hover {
+  background: #e5e7eb;
+}
+/* Override tasks container width for archived view */
+.tasks-container:has(.archived-list) {
+  max-width: none;
+  width: 100%;
+}
+
+.archived-list {
+  min-width: 900px !important;
+  width: 100% !important;
+}
+
+.archived-item {
+  min-width: 850px !important;
+}
+
+.archived-content {
+  min-width: 750px !important;
+  gap: 40px !important;
+}
+
+.archived-completed {
+  min-width: 150px !important;
+}
+.project-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+}
+
+.custom-project-input {
+  padding: 12px 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 10px;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.custom-project-input:focus {
+  outline: none;
+  border-color: #007bff;
+}
+.hide-select {
+  background: #fff5f5;
+  border-color: #fed7d7;
+}
+
+.hidden-tag-chip, .hidden-project-chip {
+  background: #fed7d7;
+  color: #c53030;
+  border: 1px solid #feb2b2;
+}
+
+.hidden-tag-chip button, .hidden-project-chip button {
+  color: #c53030;
 }

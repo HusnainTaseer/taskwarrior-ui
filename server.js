@@ -34,7 +34,7 @@ app.get('/api/tasks', (req, res) => {
 
 // Add new task
 app.post('/api/tasks', (req, res) => {
-  const { description, project, priority, tags } = req.body;
+  const { description, fullDescription, project, priority, tags } = req.body;
   
   let command = `task add "${description}"`;
   if (project) command += ` project:${project}`;
@@ -50,7 +50,25 @@ app.post('/api/tasks', (req, res) => {
       console.error('Error:', error);
       return res.status(500).json({ error: 'Failed to add task' });
     }
-    res.json({ success: true, message: 'Task added successfully' });
+    
+    // If there's a full description, add it as an annotation
+    if (fullDescription && fullDescription.trim()) {
+      // Extract task ID from stdout (TaskWarrior outputs "Created task X.")
+      const match = stdout.match(/Created task (\d+)/);
+      if (match) {
+        const taskId = match[1];
+        exec(`task ${taskId} annotate "${fullDescription}"`, (annotateError) => {
+          if (annotateError) {
+            console.error('Error adding annotation:', annotateError);
+          }
+          res.json({ success: true, message: 'Task added successfully' });
+        });
+      } else {
+        res.json({ success: true, message: 'Task added successfully' });
+      }
+    } else {
+      res.json({ success: true, message: 'Task added successfully' });
+    }
   });
 });
 
@@ -75,12 +93,28 @@ app.post('/api/tasks/:id/annotate', (req, res) => {
 // Update task
 app.put('/api/tasks/:id', (req, res) => {
   const taskId = req.params.id;
-  const { description, project, priority, tags } = req.body;
+  const { description, project, priority, tags, status } = req.body;
+  
+  console.log('Update request for task:', taskId, 'with data:', req.body);
+  
+  // Handle status change separately for blocking/unblocking
+  if (status === 'waiting') {
+    exec(`task ${taskId} modify wait:someday`, (error, stdout, stderr) => {
+      if (error) {
+        console.error('Error blocking task:', error);
+        return res.status(500).json({ error: 'Failed to block task' });
+      }
+      res.json({ success: true, message: 'Task blocked successfully' });
+    });
+    return;
+  }
   
   let command = `task ${taskId} modify`;
   if (description) command += ` "${description}"`;
   if (project) command += ` project:${project}`;
   if (priority) command += ` priority:${priority}`;
+  
+  console.log('Command to execute:', command);
   
   // Remove all existing tags and add new ones
   if (tags) {
@@ -94,6 +128,7 @@ app.put('/api/tasks/:id', (req, res) => {
           if (description) modifyCommand += ` "${description}"`;
           if (project) modifyCommand += ` project:${project}`;
           if (priority) modifyCommand += ` priority:${priority}`;
+          if (status) modifyCommand += ` status:${status}`;
           
           // Remove existing tags
           if (taskData.tags) {
@@ -145,19 +180,89 @@ app.post('/api/tasks/:id/complete', (req, res) => {
   });
 });
 
-// Reopen task
+// Reopen task (works for both completed and blocked tasks)
 app.post('/api/tasks/:id/reopen', (req, res) => {
   const taskId = req.params.id;
   
-  // Use uuid: prefix for completed tasks since they have id=0
-  const command = taskId.includes('-') ? `task uuid:${taskId} modify status:pending` : `task ${taskId} modify status:pending`;
+  console.log('Reopen request for task:', taskId);
   
-  exec(command, (error, stdout, stderr) => {
-    if (error) {
-      console.error('Error:', error);
-      return res.status(500).json({ error: 'Failed to reopen task' });
+  // Use uuid: prefix if it looks like a UUID
+  const taskIdentifier = taskId.includes('-') ? `uuid:${taskId}` : taskId;
+  
+  console.log('Using task identifier:', taskIdentifier);
+  
+  // First check the task status
+  exec(`task ${taskIdentifier} info`, (infoError, infoStdout, infoStderr) => {
+    console.log('Task info:', infoStdout);
+    
+    // Try multiple approaches to reopen the task
+    if (infoStdout.includes('Status        Completed')) {
+      // For completed tasks, set status to pending
+      exec(`task ${taskIdentifier} modify status:pending`, (error, stdout, stderr) => {
+        console.log('Set status pending - stdout:', stdout, 'stderr:', stderr);
+        res.json({ success: true, message: 'Task reopened successfully' });
+      });
+    } else if (infoStdout.includes('wait')) {
+      // For blocked tasks, remove wait field
+      exec(`task ${taskIdentifier} modify wait:`, (error, stdout, stderr) => {
+        console.log('Remove wait - stdout:', stdout, 'stderr:', stderr);
+        res.json({ success: true, message: 'Task unblocked successfully' });
+      });
+    } else {
+      // Default approach
+      exec(`task ${taskIdentifier} modify status:pending wait:`, (error, stdout, stderr) => {
+        console.log('Default modify - stdout:', stdout, 'stderr:', stderr);
+        res.json({ success: true, message: 'Task reopened successfully' });
+      });
     }
-    res.json({ success: true, message: 'Task reopened successfully' });
+  });
+});
+
+// Archive task
+app.post('/api/tasks/:id/archive', (req, res) => {
+  const taskId = req.params.id;
+  const taskIdentifier = taskId.includes('-') ? `uuid:${taskId}` : taskId;
+  
+  exec(`task ${taskIdentifier} modify +archived`, (error, stdout, stderr) => {
+    if (error) {
+      console.error('Error archiving task:', error);
+      return res.status(500).json({ error: 'Failed to archive task' });
+    }
+    res.json({ success: true, message: 'Task archived successfully' });
+  });
+});
+
+// Unarchive task
+app.post('/api/tasks/:id/unarchive', (req, res) => {
+  const taskId = req.params.id;
+  const taskIdentifier = taskId.includes('-') ? `uuid:${taskId}` : taskId;
+  
+  exec(`task ${taskIdentifier} modify -archived`, (error, stdout, stderr) => {
+    if (error) {
+      console.error('Error unarchiving task:', error);
+      return res.status(500).json({ error: 'Failed to unarchive task' });
+    }
+    res.json({ success: true, message: 'Task unarchived successfully' });
+  });
+});
+
+// Delete task
+app.delete('/api/tasks/:id', (req, res) => {
+  const taskId = req.params.id;
+  
+  console.log('Delete request for task:', taskId);
+  
+  // Use uuid: prefix if it looks like a UUID
+  const taskIdentifier = taskId.includes('-') ? `uuid:${taskId}` : taskId;
+  
+  // TaskWarrior delete command with confirmation bypass
+  exec(`echo 'yes' | task ${taskIdentifier} delete`, (error, stdout, stderr) => {
+    if (error) {
+      console.error('Error deleting task:', error);
+      return res.status(500).json({ error: 'Failed to delete task' });
+    }
+    console.log('Task deleted successfully:', stdout);
+    res.json({ success: true, message: 'Task deleted successfully' });
   });
 });
 

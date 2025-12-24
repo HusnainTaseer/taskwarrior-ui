@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, CheckCircle, Clock, Star, Filter, Search, X, RotateCcw } from 'lucide-react';
+import { Plus, CheckCircle, Clock, Star, Filter, Search, X, RotateCcw, Trash2 } from 'lucide-react';
 import './App.css';
 
 function App() {
   const [tasks, setTasks] = useState([]);
   const [completedTasks, setCompletedTasks] = useState([]);
+  const [blockedTasks, setBlockedTasks] = useState([]);
+  const [archivedTasks, setArchivedTasks] = useState([]);
   const [newTask, setNewTask] = useState('');
   const [newDescription, setNewDescription] = useState('');
   const [newProject, setNewProject] = useState('');
@@ -14,7 +16,9 @@ function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedTags, setSelectedTags] = useState([]);
   const [selectedProjects, setSelectedProjects] = useState([]);
-  const [viewMode, setViewMode] = useState('pending'); // 'pending' or 'completed'
+  const [hiddenTags, setHiddenTags] = useState([]);
+  const [hiddenProjects, setHiddenProjects] = useState([]);
+  const [viewMode, setViewMode] = useState('pending'); // 'pending', 'completed', 'blocked', or 'archived'
   const [selectedTask, setSelectedTask] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
@@ -22,6 +26,9 @@ function App() {
   const [sortBy, setSortBy] = useState('priority'); // 'priority', 'project', 'tags', 'created', 'completed'
   const [newNote, setNewNote] = useState('');
   const [showCelebration, setShowCelebration] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [taskToDelete, setTaskToDelete] = useState(null);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
 
   const availableTags = ['Productivity', 'Personal', 'Work', 'Learning', 'Health', 'Finance', 'Shopping', 'Travel'];
   const availableProjects = ['default', 'productivity', 'work', 'personal', 'learning', 'health'];
@@ -33,6 +40,44 @@ function App() {
     const month = dateString.substring(4, 6);
     const day = dateString.substring(6, 8);
     return new Date(`${year}-${month}-${day}`).toLocaleDateString();
+  };
+
+  const formatTaskDateToJS = (dateString) => {
+    if (!dateString) return null;
+    const year = dateString.substring(0, 4);
+    const month = dateString.substring(4, 6);
+    const day = dateString.substring(6, 8);
+    return `${year}-${month}-${day}`;
+  };
+
+  const archiveTask = async (id, uuid, isAutoArchive = false) => {
+    try {
+      const taskIdentifier = uuid || id;
+      const response = await fetch(`http://localhost:3001/api/tasks/${taskIdentifier}/archive`, {
+        method: 'POST',
+      });
+      
+      if (response.ok && !isAutoArchive) {
+        loadTasks();
+      }
+    } catch (error) {
+      console.error('Error archiving task:', error);
+    }
+  };
+
+  const unarchiveTask = async (id, uuid) => {
+    try {
+      const taskIdentifier = uuid || id;
+      const response = await fetch(`http://localhost:3001/api/tasks/${taskIdentifier}/unarchive`, {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        loadTasks();
+      }
+    } catch (error) {
+      console.error('Error unarchiving task:', error);
+    }
   };
 
   // Get all unique tags from existing tasks
@@ -74,9 +119,34 @@ function App() {
       console.log('Raw data:', data.length, 'tasks');
       console.log('Statuses:', data.map(t => t.status));
       
-      // Separate pending and completed tasks
-      const pending = data.filter(task => task.status === 'pending');
-      const completed = data.filter(task => task.status === 'completed');
+      // Filter out deleted tasks and separate pending, completed, blocked, and archived tasks
+      const activeTasks = data.filter(task => task.status !== 'deleted');
+      const pending = activeTasks.filter(task => task.status === 'pending' && !task.wait);
+      const blocked = activeTasks.filter(task => task.wait || task.status === 'waiting');
+      
+      // Auto-archive completed tasks older than 60 days
+      const sixtyDaysAgo = new Date();
+      sixtyDaysAgo.setDate(sixtyDaysAgo.getDate() - 60);
+      
+      const completed = activeTasks.filter(task => {
+        if (task.status !== 'completed') return false;
+        if (!task.tags || !task.tags.includes('archived')) {
+          // Check if task should be auto-archived
+          if (task.end) {
+            const completedDate = new Date(formatTaskDateToJS(task.end));
+            if (completedDate < sixtyDaysAgo) {
+              // Auto-archive this task
+              archiveTask(task.id, task.uuid, true);
+              return false;
+            }
+          }
+        }
+        return !task.tags || !task.tags.includes('archived');
+      });
+      
+      const archived = activeTasks.filter(task => 
+        task.status === 'completed' && task.tags && task.tags.includes('archived')
+      );
       
       // Add fullDescription and ensure all required fields exist
       const enhancedPending = pending.map(task => ({
@@ -98,13 +168,36 @@ function App() {
         completedAt: task.end || new Date().toISOString()
       }));
       
+      const enhancedBlocked = blocked.map(task => ({
+        ...task,
+        fullDescription: task.annotations?.[0]?.description || task.description,
+        tags: task.tags || [],
+        project: task.project || 'default',
+        priority: task.priority || 'M',
+        urgency: task.urgency || 0
+      }));
+      
+      const enhancedArchived = archived.map(task => ({
+        ...task,
+        fullDescription: task.annotations?.[0]?.description || task.description,
+        tags: task.tags || [],
+        project: task.project || 'default',
+        priority: task.priority || 'M',
+        urgency: task.urgency || 0,
+        completedAt: task.end || new Date().toISOString()
+      }));
+      
       setTasks(enhancedPending);
       setCompletedTasks(enhancedCompleted);
+      setBlockedTasks(enhancedBlocked);
+      setArchivedTasks(enhancedArchived);
     } catch (error) {
       console.error('Failed to load tasks:', error);
       // Set empty arrays on error
       setTasks([]);
       setCompletedTasks([]);
+      setBlockedTasks([]);
+      setArchivedTasks([]);
     }
   };
 
@@ -119,6 +212,7 @@ function App() {
         },
         body: JSON.stringify({
           description: newTask,
+          fullDescription: newDescription, // Add the detailed description
           project: newProject || 'default',
           priority: newPriority,
           tags: newTags
@@ -141,13 +235,23 @@ function App() {
   };
 
   const updateTask = async (taskData) => {
+    console.log('Updating task with data:', taskData);
     try {
+      const payload = {
+        description: taskData.description,
+        project: taskData.project,
+        priority: taskData.priority,
+        tags: taskData.tags,
+        status: taskData.status
+      };
+      console.log('Sending payload:', payload);
+      
       const response = await fetch(`http://localhost:3001/api/tasks/${taskData.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(taskData),
+        body: JSON.stringify(payload),
       });
       
       if (response.ok) {
@@ -165,7 +269,10 @@ function App() {
   const openEditModal = (task) => {
     setEditingTask({
       ...task,
-      tags: task.tags || []
+      tags: task.tags || [],
+      project: task.project || 'default',
+      priority: task.priority || 'M',
+      status: task.status || 'pending'
     });
     setShowEditModal(true);
   };
@@ -214,15 +321,64 @@ function App() {
     }
   };
 
+  const openDeleteModal = (task) => {
+    setTaskToDelete(task);
+    setShowDeleteModal(true);
+    setDeleteConfirmText('');
+  };
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setTaskToDelete(null);
+    setDeleteConfirmText('');
+  };
+
+  const deleteTask = async () => {
+    console.log('Delete confirmation text:', deleteConfirmText);
+    if (deleteConfirmText !== 'deleteme') {
+      console.log('Confirmation text does not match');
+      return;
+    }
+    
+    console.log('Attempting to delete task:', taskToDelete);
+    
+    try {
+      const taskIdentifier = taskToDelete.uuid || taskToDelete.id;
+      console.log('Using task identifier:', taskIdentifier);
+      
+      const response = await fetch(`http://localhost:3001/api/tasks/${taskIdentifier}`, {
+        method: 'DELETE',
+      });
+      
+      console.log('Delete response:', response);
+      
+      if (response.ok) {
+        console.log('Task deleted successfully');
+        loadTasks();
+        closeDeleteModal();
+      } else {
+        console.error('Failed to delete task');
+      }
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
+  };
+
   const uncompleteTask = async (id, uuid) => {
+    console.log('Reopening task with id:', id, 'uuid:', uuid);
     try {
       // Use uuid for completed tasks since they have id=0
       const taskIdentifier = uuid || id;
+      console.log('Using task identifier:', taskIdentifier);
+      
       const response = await fetch(`http://localhost:3001/api/tasks/${taskIdentifier}/reopen`, {
         method: 'POST',
       });
       
+      console.log('Reopen response:', response);
+      
       if (response.ok) {
+        console.log('Task reopened successfully');
         // Reload tasks to get the updated list
         loadTasks();
       } else {
@@ -309,9 +465,23 @@ function App() {
     });
   };
 
-  const filteredTasks = sortTasks((viewMode === 'pending' ? tasks : completedTasks)
+  const getTasksForView = () => {
+    switch (viewMode) {
+      case 'pending': return tasks;
+      case 'completed': return completedTasks;
+      case 'blocked': return blockedTasks;
+      case 'archived': return archivedTasks;
+      default: return tasks;
+    }
+  };
+
+  const filteredTasks = sortTasks(getTasksForView()
     .filter(task => {
-      const statusMatches = viewMode === 'pending' ? task.status === 'pending' : task.status === 'completed';
+      const statusMatches = 
+        (viewMode === 'pending' && task.status === 'pending' && !task.wait && task.status !== 'deleted') ||
+        (viewMode === 'completed' && task.status === 'completed' && task.status !== 'deleted' && (!task.tags || !task.tags.includes('archived'))) ||
+        (viewMode === 'blocked' && (task.wait || task.status === 'waiting') && task.status !== 'deleted') ||
+        (viewMode === 'archived' && task.status === 'completed' && task.tags && task.tags.includes('archived'));
       if (!statusMatches) return false;
       
       const matchesFilter = filter === 'all' || 
@@ -329,7 +499,13 @@ function App() {
       const matchesProjects = selectedProjects.length === 0 || 
         selectedProjects.includes(task.project);
       
-      return matchesFilter && matchesSearch && matchesTags && matchesProjects;
+      const hiddenByTags = hiddenTags.length > 0 && 
+        task.tags && hiddenTags.some(hiddenTag => task.tags.includes(hiddenTag));
+      
+      const hiddenByProjects = hiddenProjects.length > 0 && 
+        hiddenProjects.includes(task.project);
+      
+      return matchesFilter && matchesSearch && matchesTags && matchesProjects && !hiddenByTags && !hiddenByProjects;
     }));
 
   return (
@@ -349,6 +525,18 @@ function App() {
               onClick={() => setViewMode('completed')}
             >
               Completed ({completedTasks.length})
+            </button>
+            <button 
+              className={viewMode === 'blocked' ? 'active' : ''}
+              onClick={() => setViewMode('blocked')}
+            >
+              Blocked ({blockedTasks.length})
+            </button>
+            <button 
+              className={viewMode === 'archived' ? 'active' : ''}
+              onClick={() => setViewMode('archived')}
+            >
+              Archived ({archivedTasks.length})
             </button>
           </div>
           <div className="search-box">
@@ -374,6 +562,22 @@ function App() {
                 <span key={`project-${project}`} className="filter-chip project-chip">
                   {project}
                   <button onClick={() => setSelectedProjects(prev => prev.filter(p => p !== project))}>
+                    <X size={14} />
+                  </button>
+                </span>
+              ))}
+              {hiddenTags.map(tag => (
+                <span key={`hidden-tag-${tag}`} className="filter-chip hidden-tag-chip">
+                  -{tag}
+                  <button onClick={() => setHiddenTags(prev => prev.filter(t => t !== tag))}>
+                    <X size={14} />
+                  </button>
+                </span>
+              ))}
+              {hiddenProjects.map(project => (
+                <span key={`hidden-project-${project}`} className="filter-chip hidden-project-chip">
+                  -{project}
+                  <button onClick={() => setHiddenProjects(prev => prev.filter(p => p !== project))}>
                     <X size={14} />
                   </button>
                 </span>
@@ -406,6 +610,34 @@ function App() {
             >
               <option value="">+ Add Project</option>
               {getAllUniqueProjects().filter(project => !selectedProjects.includes(project)).map(project => (
+                <option key={project} value={project}>{project}</option>
+              ))}
+            </select>
+            <select 
+              value=""
+              onChange={(e) => {
+                if (e.target.value && !hiddenTags.includes(e.target.value)) {
+                  setHiddenTags(prev => [...prev, e.target.value]);
+                }
+              }}
+              className="filter-select hide-select"
+            >
+              <option value="">- Hide Tag</option>
+              {getAllUniqueTags().filter(tag => !hiddenTags.includes(tag)).map(tag => (
+                <option key={tag} value={tag}>{tag}</option>
+              ))}
+            </select>
+            <select 
+              value=""
+              onChange={(e) => {
+                if (e.target.value && !hiddenProjects.includes(e.target.value)) {
+                  setHiddenProjects(prev => [...prev, e.target.value]);
+                }
+              }}
+              className="filter-select hide-select"
+            >
+              <option value="">- Hide Project</option>
+              {getAllUniqueProjects().filter(project => !hiddenProjects.includes(project)).map(project => (
                 <option key={project} value={project}>{project}</option>
               ))}
             </select>
@@ -467,16 +699,34 @@ function App() {
               rows="2"
             />
             <div className="task-options">
-              <select 
-                value={newProject} 
-                onChange={(e) => setNewProject(e.target.value)}
-                className="project-select"
-              >
-                <option value="">Select Project</option>
-                {availableProjects.map(project => (
-                  <option key={project} value={project}>{project}</option>
-                ))}
-              </select>
+              <div className="project-input-container">
+                <select 
+                  value={newProject} 
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setNewProject('');
+                    } else {
+                      setNewProject(e.target.value);
+                    }
+                  }}
+                  className="project-select"
+                >
+                  <option value="">Select Project</option>
+                  {[...new Set([...availableProjects, ...getAllUniqueProjects()])].map(project => (
+                    <option key={project} value={project}>{project}</option>
+                  ))}
+                  <option value="__custom__">+ Add New Project</option>
+                </select>
+                {(newProject === '' || !([...availableProjects, ...getAllUniqueProjects()].includes(newProject))) && (
+                  <input
+                    type="text"
+                    placeholder="Enter new project name..."
+                    value={newProject}
+                    onChange={(e) => setNewProject(e.target.value)}
+                    className="custom-project-input"
+                  />
+                )}
+              </div>
               <select 
                 value={newPriority} 
                 onChange={(e) => setNewPriority(e.target.value)}
@@ -511,8 +761,47 @@ function App() {
       )}
 
       <div className="tasks-container">
-        {filteredTasks.map(task => (
-          <div key={task.uuid} className="task-card" onClick={() => openTaskModal(task)}>
+        {viewMode === 'archived' ? (
+          <div className="archived-list">
+            {filteredTasks.length === 0 ? (
+              <div className="archived-item">No archived tasks found</div>
+            ) : (
+              filteredTasks.map(task => (
+                <div key={task.uuid} className="archived-item">
+                  <div className="archived-content">
+                    <span className="archived-description">{task.description}</span>
+                    <span className="archived-project">{task.project}</span>
+                    <span className="archived-completed">{formatTaskDate(task.end)}</span>
+                  </div>
+                  <div className="archived-actions">
+                    <button 
+                      className="unarchive-btn" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        unarchiveTask(task.id, task.uuid);
+                      }}
+                      title="Unarchive task"
+                    >
+                      📂
+                    </button>
+                    <button 
+                      className="delete-btn" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openDeleteModal(task);
+                      }}
+                      title="Delete task"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        ) : (
+          filteredTasks.map(task => (
+            <div key={task.uuid} className="task-card" onClick={() => openTaskModal(task)}>
             <div className="task-header">
               <div className="task-priority" style={{ backgroundColor: getPriorityColor(task.priority) }}>
                 {task.priority}
@@ -555,23 +844,45 @@ function App() {
                     <CheckCircle size={18} />
                     Complete
                   </button>
+                  <button className="delete-btn" onClick={() => openDeleteModal(task)}>
+                    <Trash2 size={16} />
+                  </button>
+                </>
+              ) : viewMode === 'completed' ? (
+                <>
+                  <button className="uncomplete-btn" onClick={() => uncompleteTask(task.id, task.uuid)}>
+                    <RotateCcw size={18} />
+                    Reopen
+                  </button>
+                  <button className="archive-btn" onClick={() => archiveTask(task.id, task.uuid)}>
+                    📦
+                  </button>
+                  <button className="delete-btn" onClick={() => openDeleteModal(task)}>
+                    <Trash2 size={16} />
+                  </button>
                 </>
               ) : (
-                <button className="uncomplete-btn" onClick={() => uncompleteTask(task.id, task.uuid)}>
-                  <RotateCcw size={18} />
-                  Reopen
-                </button>
+                <>
+                  <button className="uncomplete-btn" onClick={() => uncompleteTask(task.id, task.uuid)}>
+                    <RotateCcw size={18} />
+                    Unblock
+                  </button>
+                  <button className="delete-btn" onClick={() => openDeleteModal(task)}>
+                    <Trash2 size={16} />
+                  </button>
+                </>
               )}
             </div>
           </div>
-        ))}
+          ))
+        )}
       </div>
 
       {filteredTasks.length === 0 && (
         <div className="empty-state">
           <Clock size={48} />
           <h3>No {viewMode} tasks found</h3>
-          <p>{viewMode === 'pending' ? 'Add a new task or adjust your filters' : 'Complete some tasks to see them here'}</p>
+          <p>{viewMode === 'pending' ? 'Add a new task or adjust your filters' : viewMode === 'completed' ? 'Complete some tasks to see them here' : 'Block some tasks to see them here'}</p>
         </div>
       )}
 
@@ -682,8 +993,7 @@ function App() {
                   value={editingTask.project || ''} 
                   onChange={(e) => setEditingTask({...editingTask, project: e.target.value})}
                 >
-                  <option value="">Select Project</option>
-                  {availableProjects.map(project => (
+                  {[...new Set([...availableProjects, ...getAllUniqueProjects()])].map(project => (
                     <option key={project} value={project}>{project}</option>
                   ))}
                 </select>
@@ -694,6 +1004,13 @@ function App() {
                   <option value="L">Low Priority</option>
                   <option value="M">Medium Priority</option>
                   <option value="H">High Priority</option>
+                </select>
+                <select 
+                  value={editingTask.status || 'pending'} 
+                  onChange={(e) => setEditingTask({...editingTask, status: e.target.value})}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="waiting">Blocked</option>
                 </select>
                 <div className="tags-section">
                   <label>Tags:</label>
@@ -715,6 +1032,41 @@ function App() {
             <div className="modal-actions">
               <button className="cancel-btn" onClick={closeEditModal}>Cancel</button>
               <button className="save-btn" onClick={() => updateTask(editingTask)}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && taskToDelete && (
+        <div className="modal-overlay" onClick={closeDeleteModal}>
+          <div className="modal-content delete-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h2>Delete Task</h2>
+              <button className="close-btn" onClick={closeDeleteModal}>
+                <X size={24} />
+              </button>
+            </div>
+            <div className="modal-body">
+              <p><strong>Task:</strong> {taskToDelete.description}</p>
+              <p className="warning-text">⚠️ This action cannot be undone. The task will be permanently deleted from TaskWarrior.</p>
+              <p>Type <strong>deleteme</strong> to confirm deletion:</p>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                placeholder="Type 'deleteme' to confirm"
+                className="delete-confirm-input"
+              />
+            </div>
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={closeDeleteModal}>Cancel</button>
+              <button 
+                className="delete-confirm-btn" 
+                onClick={deleteTask}
+                disabled={deleteConfirmText !== 'deleteme'}
+              >
+                Delete Task
+              </button>
             </div>
           </div>
         </div>
