@@ -265,7 +265,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Husnain Taseer**
 - GitHub: [@HusnainTaseer](https://github.com/HusnainTaseer)
-- Email: husnain.taseer@example.com
 
 ## 🙏 Acknowledgments
 
