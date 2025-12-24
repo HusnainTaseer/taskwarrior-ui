@@ -5,7 +5,7 @@
   "main": "server.js",
   "author": "Husnain Taseer <husnain.taseer@example.com>",
   "license": "MIT",
-  "homepage": "https://github.com/HusnainTaseer/taskwarrior-ui",
+  "homepage": "/taskwarrior-ui",
   "repository": {
     "type": "git",
     "url": "https://github.com/HusnainTaseer/taskwarrior-ui.git"
