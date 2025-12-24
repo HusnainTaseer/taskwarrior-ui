@@ -512,7 +512,7 @@ function App() {
     <div className="app">
       <div className="header">
         <div className="header-title">
-          <img src="/taskwarrior-ui/images/logo.png" alt="TaskWarrior UI" className="app-logo" />
+          <img src="/images/logo.png" alt="TaskWarrior UI" className="app-logo" />
           <h1>TaskWarrior UI</h1>
         </div>
         <div className="header-controls">
