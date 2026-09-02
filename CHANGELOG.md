@@ -15,6 +15,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Enhanced mobile experience
 - Plugin system for extensions
 
+## [1.1.3] - 2026-09-01
+
+### Fixed
+- Corrected inverted field labels to match TaskWarrior's data model. The
+  required one-line field is now labeled "Description" and the optional
+  attached note is labeled "Annotation" (previously these were swapped):
+  - Add-task "Task title..." placeholder → "Task description..."
+  - Add-task "Task description (optional)..." placeholder → "Annotation (optional)..."
+  - Task detail view heading "Description" → "Annotation"
+  ([#1](https://github.com/HusnainTaseer/taskwarrior-ui/issues/1))
+
+### Changed
+- Refreshed the README screenshot to reflect the corrected labels; it is now
+  tracked in-repo at `docs/screenshot.png` and referenced by a relative path.
+
 ## [1.0.0] - 2024-12-23
 
 ### Added
