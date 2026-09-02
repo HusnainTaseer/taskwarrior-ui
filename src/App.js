@@ -690,13 +690,13 @@ function App() {
           <div className="task-inputs">
             <input
               type="text"
-              placeholder="Task title..."
+              placeholder="Task description..."
               value={newTask}
               onChange={(e) => setNewTask(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && addTask()}
             />
             <textarea
-              placeholder="Task description (optional)..."
+              placeholder="Annotation (optional)..."
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
               rows="2"
@@ -927,7 +927,7 @@ function App() {
                 )}
               </div>
               <div className="task-full-description">
-                <h3>Description</h3>
+                <h3>Annotation</h3>
                 <p>{selectedTask.fullDescription}</p>
               </div>
               {selectedTask.annotations && selectedTask.annotations.length > 0 && (
